@@ -1,0 +1,10 @@
+[package]
+name = "lending_protocol"
+version = "0.0.0"
+
+[dependencies]
+InitiaStdlib = { git = "https://github.com/initia-labs/move-natives", subdir = "initia_stdlib", rev = "main" }
+
+[addresses]
+std =  "0x1"
+lending_protocol= "0x67243FAC3B61F10414A13EAC628644888CE3865F"
