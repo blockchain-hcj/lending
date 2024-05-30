@@ -4,7 +4,8 @@ version = "0.0.0"
 
 [dependencies]
 InitiaStdlib = { git = "https://github.com/initia-labs/move-natives", subdir = "initia_stdlib", rev = "main" }
+oracle_service = { git = "https://github.com/blockchain-hcj/oracle_service", rev = "main" }
 
 [addresses]
 std =  "0x1"
-lending_protocol= "0x67243FAC3B61F10414A13EAC628644888CE3865F"
+lending_protocol= "0xDB260B0258B43806FAC5E32F1FE21D93FCD5EE64"
