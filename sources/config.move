@@ -37,6 +37,7 @@ module lending_protocol::config {
 
 
     public entry fun set_collateral_param(token_type: address) acquires Config {
+        //todo 
         let signer_address = get_app_signer_address();
         let config = borrow_global_mut<Config>(signer_address); 
         let is_whitelisted = vector::contains(&config.collateral_tokens, &token_type);

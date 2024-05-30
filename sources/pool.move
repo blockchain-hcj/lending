@@ -54,7 +54,8 @@ module lending_protocol::pool {
 
 
     public (friend) fun supply_to_pool(account: &signer, token_type: address, amount: u256) acquires ProtocolPool, PoolController{
-        let protocol_pool = borrow_global_mut<ProtocolPool>(token_type);
+        let signer_address = get_app_signer_address();
+        let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
         let user_address = signer::address_of(account);
         if(!contains_key(& protocol_pool.supply_pool, &token_type)){
             simple_map::add(&mut protocol_pool.supply_pool, token_type, SupplyPool{
@@ -103,7 +104,7 @@ module lending_protocol::pool {
         let router_signer_address = get_app_signer_address();
         let token_metadata = object::address_to_object<Metadata>(token_meta_data_address);
         let user_gas_fungible_store = primary_fungible_store::primary_store(signer::address_of(from), token_metadata);
-        let module_fungible_store = primary_fungible_store::primary_store(router_signer_address, token_metadata);
+        let module_fungible_store = primary_fungible_store::ensure_primary_store_exists(router_signer_address, token_metadata);
         fungible_asset::transfer(from, user_gas_fungible_store, module_fungible_store, (amount as u64));
     }
 
@@ -114,6 +115,15 @@ module lending_protocol::pool {
     #[view]
     public fun get_app_signer_address(): address {
         object::create_object_address(@lending_protocol, APP_OBJECT_SEED)
+    }
+
+     #[view]
+    public fun get_user_token_supply(user: address, token_type: address): u256 acquires ProtocolPool{
+        let signer_address = get_app_signer_address();
+        let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
+        let supply_pool = borrow(&protocol_pool.supply_pool, &token_type);
+        let user_supply = borrow(&supply_pool.user_supply, &user);
+        return *user_supply
     }
 
 
