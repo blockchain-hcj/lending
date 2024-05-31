@@ -8,7 +8,6 @@ module lending_protocol::pool {
     use std::fungible_asset::{Self, Metadata};
     use std::simple_map::{Self,  borrow, borrow_mut, contains_key};
     use std::object::{Self, ExtendRef};
-
     friend lending_protocol::lend;
 
     const APP_OBJECT_SEED: vector<u8> = b"LEND";    
@@ -81,11 +80,31 @@ module lending_protocol::pool {
     }
 
 
-    public (friend) fun borrow_usd(account: &signer, amount: u256){
+    public (friend) fun borrow_usd(account: &signer, amount: u256) acquires ProtocolPool {
         let usd_metadata = usd::get_usd_metadata();
         primary_fungible_store::ensure_primary_store_exists<Metadata>(signer::address_of(account), usd_metadata);
         let receiving_store = primary_fungible_store::primary_store(signer::address_of(account), usd_metadata);
+        
+        
+        // transfer usd to user
         usd::mint_to(receiving_store, (amount as u64));
+
+
+        let signer_address = get_app_signer_address();
+        let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
+        let borrow_pool = &mut protocol_pool.borrow_pool;
+        let user_address = signer::address_of(account);
+        //add user borrow
+        if(!contains_key(& borrow_pool.user_borrow, &user_address)){
+            simple_map::add(&mut borrow_pool.user_borrow, user_address, amount); 
+        }else{
+            let user_borrow_value = borrow_mut(&mut borrow_pool.user_borrow, &user_address);
+            *user_borrow_value = *user_borrow_value + amount;
+        };   
+
+        //add total borrow
+        borrow_pool.total_borrow = borrow_pool.total_borrow + amount;
+
     }
 
 
@@ -109,8 +128,6 @@ module lending_protocol::pool {
     }
 
    
-
-
        
     #[view]
     public fun get_app_signer_address(): address {
@@ -126,6 +143,14 @@ module lending_protocol::pool {
         return *user_supply
     }
 
+     #[view]
+     public fun get_user_total_borrow(user: address, token_type: address): u256 acquires ProtocolPool{
+        let signer_address = get_app_signer_address();
+        let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
+        let borrow_pool = &protocol_pool.borrow_pool;
+        let user_borrow = borrow(&borrow_pool.user_borrow, &user);
+        return *user_borrow
+     }
 
     fun get_app_signer(app_signer_address: address): signer acquires PoolController {
         object::generate_signer_for_extending(&borrow_global<PoolController>(app_signer_address).app_extend_ref)

@@ -11,12 +11,13 @@ module lending_protocol::config {
     use std::object::{Self, ExtendRef, Object};
 
     const MAX_COLLATERAL_RATIO:u256 = 10000;
-    const PRECISION: u256 = 100000;
+    const PRECISION_DECIMALS: u256 = 6;
     const APP_OBJECT_SEED: vector<u8> = b"CONFIG";    
 
     struct Config has key {
-        collateral_param: SimpleMap<address, CollateralParam>,
-        collateral_tokens: vector<address>
+        collateral_tokens: vector<address>,
+        mcr: u256,
+
     }
     
     struct CollateralParam has store {
@@ -28,8 +29,8 @@ module lending_protocol::config {
         let app_signer = &object::generate_signer(constructor_ref); 
         move_to(app_signer,
                 Config{
-                     collateral_param: simple_map::create(),
-                     collateral_tokens: vector::empty()
+                     collateral_tokens: vector::empty(),
+                     mcr: 1000000000
                 }
         )
                
@@ -54,6 +55,14 @@ module lending_protocol::config {
         let config = borrow_global<Config>(signer_address);
         return vector::contains(&config.collateral_tokens, &token_type)
     }
+
+    #[view]
+    public fun get_all_whitelist_tokens():vector<address> acquires Config{
+        let signer_address = get_app_signer_address();
+        let config = borrow_global<Config>(signer_address);
+        return config.collateral_tokens
+    }
+
 
      #[view]
     public fun get_app_signer_address(): address {
