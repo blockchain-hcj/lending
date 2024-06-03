@@ -89,7 +89,16 @@ module lending_protocol::config {
     public fun get_app_signer_address(): address {
         object::create_object_address(@lending_protocol, APP_OBJECT_SEED)
     }
+
+    #[view]
+    public fun get_price_precision_decimal(): u256{
+        return PRECISION_DECIMALS
+    }
     
+    #[view]
+    public fun get_precision(): u256{
+        return PRECISION_DECIMALS
+    }
 
      fun acquire_admin_cap(account: &signer): Cap<ADMIN> {
         capability::acquire<ADMIN>(account, &ADMIN{})

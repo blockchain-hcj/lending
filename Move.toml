@@ -8,8 +8,9 @@ oracle_service = { git = "https://github.com/blockchain-hcj/oracle_service", rev
 
 [addresses]
 std =  "0x1"
-lending_protocol= "0x2E8CA19B9CDACA8F9F505457AAE590ACD7432631"
+lending_protocol= "0xB2E5CA668EF487EFBD833B040EC0F94F977F2E89"
+
 
 [dev-addresses]
-oracle_service = "0xe2f37b8ac45d29d5ea23eb7d16dd3f7a7ab6426f5a998d6c23ecd3ae8d9d29eb"
+oracle_service = "0xB2E5CA668EF487EFBD833B040EC0F94F977F2E89"
 

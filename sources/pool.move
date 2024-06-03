@@ -3,6 +3,7 @@
 module lending_protocol::pool {
 
     use lending_protocol::usd;
+    use lending_protocol::config;
     use std::signer;
     use std::primary_fungible_store;
     use std::fungible_asset::{Self, Metadata};
@@ -10,7 +11,12 @@ module lending_protocol::pool {
     use std::object::{Self, ExtendRef};
     friend lending_protocol::lend;
 
-    const APP_OBJECT_SEED: vector<u8> = b"LEND";    
+    const APP_OBJECT_SEED: vector<u8> = b"LEND";
+
+
+
+    //error
+    const ENotWhiteListToken: u64 = 3000;        
 
     struct PoolController has key, store{
          app_extend_ref: ExtendRef
@@ -137,20 +143,33 @@ module lending_protocol::pool {
      #[view]
     public fun get_user_token_supply(user: address, token_type: address): u256 acquires ProtocolPool{
         let signer_address = get_app_signer_address();
+        let is_whitelist_token = config::is_whitelist_token(token_type);
+        assert!(is_whitelist_token, ENotWhiteListToken);
         let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
+        if(!contains_key(&protocol_pool.supply_pool, &token_type)){
+            return 0 
+        };
         let supply_pool = borrow(&protocol_pool.supply_pool, &token_type);
+        if(!contains_key(&supply_pool.user_supply, &user)){
+            return 0
+        };
         let user_supply = borrow(&supply_pool.user_supply, &user);
         return *user_supply
     }
 
      #[view]
-     public fun get_user_total_borrow(user: address, token_type: address): u256 acquires ProtocolPool{
+     public fun get_user_total_borrow(user: address): u256 acquires ProtocolPool{
         let signer_address = get_app_signer_address();
         let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
         let borrow_pool = &protocol_pool.borrow_pool;
+         if(!contains_key(&borrow_pool.user_borrow, &user)){
+            return 0
+        };
         let user_borrow = borrow(&borrow_pool.user_borrow, &user);
         return *user_borrow
      }
+
+
 
     fun get_app_signer(app_signer_address: address): signer acquires PoolController {
         object::generate_signer_for_extending(&borrow_global<PoolController>(app_signer_address).app_extend_ref)
