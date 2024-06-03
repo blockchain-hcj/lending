@@ -19,10 +19,8 @@ module lending_protocol::reader {
             let user_token_supply = pool::get_user_token_supply(user, *token_address_ref);
             let price = get_token_price(*token_address_ref);
 
-            let token_metadata = object::address_to_object<Metadata>(*token_address_ref);
-            let token_decimals = fungible_asset::decimals(token_metadata);
-            
-            usd_value = usd_value + user_token_supply * price / utils::pow_u256(10, ( token_decimals as u256));
+            let token_decimals = config::get_token_decimals(*token_address_ref);            
+            usd_value = usd_value + user_token_supply * price / utils::pow_u256(10,  token_decimals );
         };
         return usd_value
     }

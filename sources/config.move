@@ -24,6 +24,7 @@ module lending_protocol::config {
 
     struct Config has key {
         collateral_tokens: vector<address>,
+        token_decimals: SimpleMap<address, u256>,
         mcr: u256
 
     }
@@ -39,7 +40,8 @@ module lending_protocol::config {
         move_to(app_signer,
                 Config{
                      collateral_tokens: vector::empty(),
-                     mcr: 1000000000
+                     mcr: 1000000000,
+                     token_decimals: simple_map::create()
                 }
         );
         capability::create<ADMIN>(deployer, &ADMIN{});
@@ -47,13 +49,14 @@ module lending_protocol::config {
       }
 
 
-    public entry fun add_collateral(account: &signer, token_type: address) acquires Config {
+    public entry fun add_collateral(account: &signer, token_type: address, decimals: u256) acquires Config {
         acquire_admin_cap(account);
         let signer_address = get_app_signer_address();
         let config = borrow_global_mut<Config>(signer_address); 
         let is_whitelisted = vector::contains(&config.collateral_tokens, &token_type);
         assert!(!is_whitelisted, ECollateralAlreadyExist);
         vector::push_back(&mut config.collateral_tokens, token_type);
+        simple_map::add(&mut config.token_decimals, token_type, decimals);
         
     }
 
@@ -66,8 +69,26 @@ module lending_protocol::config {
         assert!(is_whitelisted, ENotCollateral); 
         let (_, index) = vector::index_of(& config.collateral_tokens, &token_type);
         vector::remove(&mut config.collateral_tokens, index);
-    
+        simple_map::remove(&mut config.token_decimals, &token_type);
+        
+    }
 
+    public entry fun set_mcr(account: &signer, mcr: u256) acquires Config{
+        acquire_admin_cap(account);
+        let signer_address = get_app_signer_address();
+        let config = borrow_global_mut<Config>(signer_address); 
+         *&mut config.mcr = mcr;
+
+    }
+
+
+
+    #[view]
+    public fun get_token_decimals(token_meta_data_address: address): u256 acquires Config {
+        let signer_address = get_app_signer_address();
+        let config = borrow_global<Config>(signer_address);
+        let decimals = borrow(&config.token_decimals, &token_meta_data_address);
+        return *decimals
     }
 
     #[view]
@@ -94,6 +115,13 @@ module lending_protocol::config {
     public fun get_price_precision_decimal(): u256{
         return PRECISION_DECIMALS
     }
+
+     #[view]
+     public fun get_mcr(): u256 acquires Config{
+        let signer_address = get_app_signer_address();
+        let config = borrow_global<Config>(signer_address);
+        return config.mcr
+     }
     
     #[view]
     public fun get_precision(): u256{

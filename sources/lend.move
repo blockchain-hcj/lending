@@ -4,11 +4,12 @@ module lending_protocol::lend {
 
     use lending_protocol::config;
     use lending_protocol::pool;
+    use lending_protocol::reader;
     use std::event;
     use std::signer;
 
     const ENotWhiteListToken: u64 =  1000;
-
+    const ELowerThanMCR: u64 =  1001;
 
 
     #[event]
@@ -39,10 +40,13 @@ module lending_protocol::lend {
 
 
    public entry fun borrow(account: &signer, amount: u256){
-
+ 
         pool::borrow_usd(account, amount);
 
-         event::emit<IncreaseBorrowEvent>(IncreaseBorrowEvent{
+        let user_collateral_ratio = reader::get_user_collateral_ratio(signer::address_of(account));
+        let system_mcr = config::get_mcr();
+        assert!(user_collateral_ratio > system_mcr, ELowerThanMCR);
+        event::emit<IncreaseBorrowEvent>(IncreaseBorrowEvent{
               account: signer::address_of(account),
               amount});  
     }
