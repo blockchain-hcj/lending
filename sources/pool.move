@@ -17,15 +17,14 @@ module lending_protocol::pool {
 
     //error
     const ENotWhiteListToken: u64 = 3000;        
+    const EExceedBorrowAmount: u64 = 3001;
+    const EExceedSupplyAmount: u64 = 3002;
 
     struct PoolController has key, store{
          app_extend_ref: ExtendRef
     }
 
-    struct SupplyPool has store {
-        user_supply: simple_map::SimpleMap<address, u256>,
-        total_supply: u256,
-    }
+    
 
     struct BorrowPool has store {
         user_borrow: simple_map::SimpleMap<address, u256>,
@@ -33,7 +32,6 @@ module lending_protocol::pool {
     }
 
     struct ProtocolPool has key {
-        supply_pool: simple_map::SimpleMap<address, SupplyPool>,
         borrow_pool:  BorrowPool
     }
 
@@ -44,7 +42,6 @@ module lending_protocol::pool {
         let app_signer = &object::generate_signer(constructor_ref); 
         move_to(app_signer,
                 ProtocolPool{ 
-                    supply_pool: simple_map::create(),
                     borrow_pool: BorrowPool{
                          user_borrow: simple_map::create(),
                          total_borrow: 0,
@@ -58,32 +55,7 @@ module lending_protocol::pool {
    }
 
 
-    public (friend) fun supply_to_pool(account: &signer, token_type: address, amount: u256) acquires ProtocolPool, PoolController{
-        let signer_address = get_app_signer_address();
-        let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
-        let user_address = signer::address_of(account);
-        if(!contains_key(& protocol_pool.supply_pool, &token_type)){
-            simple_map::add(&mut protocol_pool.supply_pool, token_type, SupplyPool{
-                user_supply: simple_map::create(),
-                 total_supply: 0,
-            }); 
-        };
-        let supply_pool = borrow_mut(&mut protocol_pool.supply_pool, &token_type);
-
-        //transfer in token
-        module_transfer_in_token(account, token_type, amount);
-
-        //add user
-        if(!contains_key(& supply_pool.user_supply, &user_address)){
-            simple_map::add(&mut supply_pool.user_supply, user_address, amount); 
-        }else{
-            let user_supply_value = borrow_mut(&mut supply_pool.user_supply, &user_address);
-            *user_supply_value = *user_supply_value + amount;
-        };   
-
-        //add total
-        supply_pool.total_supply = supply_pool.total_supply + amount;
-    }
+   
 
 
     public (friend) fun borrow_usd(account: &signer, amount: u256) acquires ProtocolPool {
@@ -113,6 +85,20 @@ module lending_protocol::pool {
 
     }
 
+    public (friend) fun repay_usd(account: &signer, amount: u256) acquires ProtocolPool {
+        let signer_address = get_app_signer_address();
+        let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
+        let borrow_pool = &mut protocol_pool.borrow_pool;
+        let user_address = signer::address_of(account);
+        let user_borrow_value = borrow_mut(&mut borrow_pool.user_borrow, &user_address);
+        assert!(*user_borrow_value >= amount, EExceedBorrowAmount);
+        *user_borrow_value = *user_borrow_value - amount;
+        let usd_metadata = usd::get_usd_metadata();
+        let fungible_store = primary_fungible_store::primary_store(signer::address_of(account), usd_metadata);
+        usd::burn_from(fungible_store, (amount as u64));   
+    }
+
+
 
     fun module_transfer_out_token(to: address, token_meta_data_address: address, amount: u256) acquires  PoolController{
         let router_signer = get_app_signer(get_app_signer_address());
@@ -141,20 +127,15 @@ module lending_protocol::pool {
     }
 
      #[view]
-    public fun get_user_token_supply(user: address, token_type: address): u256 acquires ProtocolPool{
+    public fun get_user_token_supply(user: address, token_type: address): u256 {
         let signer_address = get_app_signer_address();
         let is_whitelist_token = config::is_whitelist_token(token_type);
         assert!(is_whitelist_token, ENotWhiteListToken);
-        let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
-        if(!contains_key(&protocol_pool.supply_pool, &token_type)){
-            return 0 
-        };
-        let supply_pool = borrow(&protocol_pool.supply_pool, &token_type);
-        if(!contains_key(&supply_pool.user_supply, &user)){
-            return 0
-        };
-        let user_supply = borrow(&supply_pool.user_supply, &user);
-        return *user_supply
+
+  
+        //TODO
+       
+        return 10000
     }
 
      #[view]

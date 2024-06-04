@@ -54,4 +54,16 @@ module lending_protocol::reader {
         return price 
     }
 
+    #[view]
+    public fun get_token_max_withdrawable(user: address, token_metadata_address: address): u256{
+        let borrow_usd = get_user_borrow_total_usd(user);
+        let mcr = config::get_mcr();
+        let precision_decimals = config::get_precision();
+        let precision = utils::pow_u256(10, precision_decimals);
+        let min_collateral_usd_value =  mcr * borrow_usd / precision;
+        let token_price = get_token_price(token_metadata_address);
+        let token_decimals = config::get_token_decimals(token_metadata_address);                            
+        return min_collateral_usd_value * utils::pow_u256(10, token_decimals) / token_price
+    }
+
 }

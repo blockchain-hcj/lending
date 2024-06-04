@@ -25,16 +25,13 @@ module lending_protocol::lend {
         amount: u256
     }
 
-
-   public entry fun supply(account: &signer,  token_type: address, amount: u256){
-        assert!(config::is_whitelist_token(token_type), ENotWhiteListToken);
-        pool::supply_to_pool(account, token_type, amount);
-
-         event::emit<IncreaseSupplyEvent>(IncreaseSupplyEvent{
-              account: signer::address_of(account),
-              token_type,
-              amount});   
+     #[event]
+    struct RepayEvent has store, drop {
+        account: address,
+        amount: u256
     }
+
+
 
 
 
@@ -50,4 +47,13 @@ module lending_protocol::lend {
               account: signer::address_of(account),
               amount});  
     }
+
+    public entry fun repay(account: &signer, amount: u256){
+          pool::repay_usd(account, amount);
+          event::emit<RepayEvent>(RepayEvent{
+              account: signer::address_of(account),
+              amount});  
+    }
+
+    
 }   
