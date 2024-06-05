@@ -83,6 +83,16 @@ module lending_protocol::config {
 
     }
 
+    public entry fun set_liquidate_rate(account: &signer, liquidation_rate: u256) acquires Config{
+        acquire_admin_cap(account);
+        let signer_address = get_app_signer_address();
+        let config = borrow_global_mut<Config>(signer_address); 
+         *&mut config.liquidation_rate = liquidation_rate;
+
+    }
+
+
+   
 
 
     #[view]
@@ -131,6 +141,7 @@ module lending_protocol::config {
         let config = borrow_global<Config>(signer_address);
         return config.liquidation_rate
      }
+
     
     #[view]
     public fun get_precision(): u256{

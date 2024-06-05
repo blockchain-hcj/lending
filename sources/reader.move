@@ -63,7 +63,12 @@ module lending_protocol::reader {
         let min_collateral_usd_value =  mcr * borrow_usd / precision;
         let token_price = get_token_price(token_metadata_address);
         let token_decimals = config::get_token_decimals(token_metadata_address);                            
-        return min_collateral_usd_value * utils::pow_u256(10, token_decimals) / token_price
+        let min_collateral_amount = min_collateral_usd_value * utils::pow_u256(10, token_decimals) / token_price;
+        let user_supply_amount = pool::get_user_token_supply(user, token_metadata_address);
+        if(min_collateral_amount > user_supply_amount){
+            return 0
+        };
+        return user_supply_amount - min_collateral_amount
     }
 
 }
