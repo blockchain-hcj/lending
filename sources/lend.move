@@ -99,8 +99,8 @@ module lending_protocol::lend {
 
 
          let user_collateral_ratio = reader::get_user_collateral_ratio(signer::address_of(account));
-         let system_mcr = config::get_mcr();
-         assert!(system_mcr > user_collateral_ratio,ELargerThanMCR);
+         let system_liquidate_rate = config::get_liquidate_rate();
+         assert!(system_liquidate_rate >= user_collateral_ratio, ELargerThanMCR);
 
 
          let repay_amount = pool::get_user_total_borrow(liquidated_user);

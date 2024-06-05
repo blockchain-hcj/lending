@@ -25,7 +25,8 @@ module lending_protocol::config {
     struct Config has key {
         collateral_tokens: vector<address>,
         token_decimals: SimpleMap<address, u256>,
-        mcr: u256
+        mcr: u256,
+        liquidation_rate: u256
 
     }
 
@@ -40,8 +41,9 @@ module lending_protocol::config {
         move_to(app_signer,
                 Config{
                      collateral_tokens: vector::empty(),
-                     mcr: 1000000000,
-                     token_decimals: simple_map::create()
+                     mcr: 1200000,
+                     token_decimals: simple_map::create(),
+                     liquidation_rate:  1100000
                 }
         );
         capability::create<ADMIN>(deployer, &ADMIN{});
@@ -121,6 +123,13 @@ module lending_protocol::config {
         let signer_address = get_app_signer_address();
         let config = borrow_global<Config>(signer_address);
         return config.mcr
+     }
+
+      #[view]
+     public fun get_liquidate_rate(): u256 acquires Config{
+        let signer_address = get_app_signer_address();
+        let config = borrow_global<Config>(signer_address);
+        return config.liquidation_rate
      }
     
     #[view]
