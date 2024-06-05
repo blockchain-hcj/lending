@@ -85,41 +85,24 @@ module lending_protocol::pool {
 
     }
 
-    public (friend) fun repay_usd(account: &signer, amount: u256) acquires ProtocolPool {
+    public (friend) fun repay_usd(repayer: &signer, repaid_user: address, amount: u256) acquires ProtocolPool {
         let signer_address = get_app_signer_address();
         let protocol_pool = borrow_global_mut<ProtocolPool>(signer_address);
         let borrow_pool = &mut protocol_pool.borrow_pool;
-        let user_address = signer::address_of(account);
-        let user_borrow_value = borrow_mut(&mut borrow_pool.user_borrow, &user_address);
-        assert!(*user_borrow_value >= amount, EExceedBorrowAmount);
-        *user_borrow_value = *user_borrow_value - amount;
+
+
+
+        let repaid_user_borrow_value = borrow_mut(&mut borrow_pool.user_borrow, &repaid_user);
+        assert!(*repaid_user_borrow_value >= amount, EExceedBorrowAmount);
+        *repaid_user_borrow_value = *repaid_user_borrow_value - amount;
+
+        
         let usd_metadata = usd::get_usd_metadata();
-        let fungible_store = primary_fungible_store::primary_store(signer::address_of(account), usd_metadata);
+        let fungible_store = primary_fungible_store::primary_store(signer::address_of(repayer), usd_metadata);
         usd::burn_from(fungible_store, (amount as u64));   
     }
 
 
-
-    fun module_transfer_out_token(to: address, token_meta_data_address: address, amount: u256) acquires  PoolController{
-        let router_signer = get_app_signer(get_app_signer_address());
-        let router_signer_address = get_app_signer_address();
-        let token_metadata = object::address_to_object<Metadata>(token_meta_data_address);
-        let user_gas_fungible_store = primary_fungible_store::primary_store(to, token_metadata);
-        let module_fungible_store = primary_fungible_store::primary_store(router_signer_address, token_metadata);
-        fungible_asset::transfer(&router_signer, module_fungible_store, user_gas_fungible_store, (amount as u64));
-    }
-
-
-    fun module_transfer_in_token(from: &signer, token_meta_data_address: address, amount: u256) acquires  PoolController{
-        let router_signer = get_app_signer(get_app_signer_address());
-        let router_signer_address = get_app_signer_address();
-        let token_metadata = object::address_to_object<Metadata>(token_meta_data_address);
-        let user_gas_fungible_store = primary_fungible_store::primary_store(signer::address_of(from), token_metadata);
-        let module_fungible_store = primary_fungible_store::ensure_primary_store_exists(router_signer_address, token_metadata);
-        fungible_asset::transfer(from, user_gas_fungible_store, module_fungible_store, (amount as u64));
-    }
-
-   
        
     #[view]
     public fun get_app_signer_address(): address {
